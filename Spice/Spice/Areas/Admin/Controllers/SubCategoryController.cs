@@ -128,7 +128,16 @@ namespace Spice.Areas.Admin.Controllers
                 }
                 else
                 {
-                    _db.SubCategory.Add(model.SubCategory);
+                    var subCatFromDb = await _db.SubCategory.FindAsync(model.SubCategory.Id);
+                    subCatFromDb.Name = model.SubCategory.Name;
+                    if (model.SubCategory.Id != null && model.SubCategory.Id != 0)
+                    {
+                        _db.SubCategory.Update(subCatFromDb);
+                    }
+                    else
+                    {
+                        _db.SubCategory.Add(model.SubCategory);
+                    }
                     await _db.SaveChangesAsync();
                     return RedirectToAction(nameof(Index));
                 }
@@ -141,8 +150,55 @@ namespace Spice.Areas.Admin.Controllers
                 SubCategoryList = await _db.SubCategory.OrderBy(s => s.Name).Select(s => s.Name).ToListAsync(),
                 StatusMessage = StatusMessage
             };
+            //modelVM.SubCategory.Id = id;
             return View(modelVM);
         }
+        //GET Details
+        public async Task<IActionResult> Details(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+            var subCategory = await _db.SubCategory.Include(s => s.Category).SingleOrDefaultAsync(m => m.Id == id);
+            if (subCategory == null)
+            {
+                return NotFound();
+            }
 
+            return View(subCategory);
+        }
+
+        // GET - DELETE
+        public async Task<IActionResult> Delete(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var subCategory = await _db.SubCategory.Include(s => s.Category).SingleOrDefaultAsync(m => m.Id == id);
+            if (subCategory == null)
+            {
+                return NotFound();
+            }
+            return View(subCategory);
+        }
+
+        // POST - DELETE
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var subCategory = await _db.SubCategory.FindAsync(id);
+            if (subCategory == null)
+            {
+                return View();
+            }
+
+            _db.SubCategory.Remove(subCategory);
+            await _db.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
     }
 }
